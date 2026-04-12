@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "./lib/utils";
+import { API } from "@/lib/api";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────────
 interface GameState {
@@ -106,7 +107,7 @@ function saveState(s: GameState) { localStorage.setItem("airi-state", JSON.strin
     </div>
   );
 }// ─── ChatArea (reusable) ───────────────────────────────────────────────────────
-function ChatArea({messages,onSend}:{messages:GameState["messages"];onSend:(t:string)=>void}) {
+function ChatArea({messages,onSend,sending}:{messages:GameState["messages"];onSend:(t:string)=>void;sending?:boolean}) {
   const [input,setInput]=useState("");
   return (
     <div className="flex flex-col h-full">
@@ -115,6 +116,7 @@ function ChatArea({messages,onSend}:{messages:GameState["messages"];onSend:(t:st
           <div className="text-center text-zinc-500 mt-20 text-sm">Say hello! 👋</div>
         )}
         {messages.map(m=>{
+          if (m.text === "__typing__") return <div key={m.id} className="flex justify-start"><div className="bg-zinc-800 text-zinc-400 rounded-2xl rounded-bl-md px-4 py-2 text-sm animate-pulse">typing...</div></div>;
           const isUser=m.from==="user";
           return (
             <div key={m.id} className={cn("flex",isUser?"justify-end":"justify-start")}>
@@ -130,9 +132,9 @@ function ChatArea({messages,onSend}:{messages:GameState["messages"];onSend:(t:st
       </div>
       <div className="p-3 border-t border-zinc-800 flex gap-2">
         <input className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-indigo-500"
-          placeholder="Say something..." value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&input.trim()&&(onSend(input.trim()),setInput(""))} />
-        <button onClick={()=>input.trim()&&(onSend(input.trim()),setInput(""))}
+          placeholder={sending?"Airi is thinking...":"Say something..."} value={input} onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&!sending&&input.trim()&&(onSend(input.trim()),setInput(""))} disabled={sending} />
+        <button onClick={()=>!sending&&input.trim()&&(onSend(input.trim()),setInput(""))} disabled={sending}
           className="px-5 py-2 bg-indigo-600 rounded-xl text-sm font-semibold text-white hover:bg-indigo-500 transition-colors">
           Send
         </button>
@@ -144,21 +146,24 @@ function ChatArea({messages,onSend}:{messages:GameState["messages"];onSend:(t:st
 function PlayScreen({state,update}:{state:GameState;update:(s:Partial<GameState>)=>void}) {
   const [sub,setSub]=useState<"games"|"chat">("games");
 
+  const [sending,setSending]=useState(false);
   function handleSend(text: string) {
+    if (sending) return;
     const newMsg = { id: crypto.randomUUID(), from: "user" as const, text, ts: Date.now() };
-    const msgs = [...state.messages, newMsg];
+    const typingMsg = { id: "typing", from: "airi" as const, text: "__typing__", ts: Date.now() };
+    const msgs = [...state.messages, newMsg, typingMsg];
     update({ messages: msgs });
-    // Simulated Airi responses
-    setTimeout(()=>{
-      const responses = [
-        "That sounds fun! Tell me more about it.",
-        "I'm here to help you win! What's your strategy?",
-        "Nice! Let's play a quick game — try Memory Match!",
-        "You've been on a roll lately! Keep it up! 🎮",
-      ];
-      const reply = { id: crypto.randomUUID(), from: "airi" as const, text: responses[Math.floor(Math.random()*responses.length)], ts: Date.now() };
-      update({ messages: [...msgs, reply] });
-    }, 1200);
+    setSending(true);
+    API.chat(msgs.slice(0,-1).map(({from, text}) => ({role: from === "user" ? "user" : "assistant", content: text})))
+      .then(data => {
+        const reply = { id: crypto.randomUUID(), from: "airi" as const, text: data.reply || "I'm here! What can I help you with?", ts: Date.now() };
+        update({ messages: [...msgs.slice(0,-1), reply] });
+      })
+      .catch(() => {
+        const reply = { id: crypto.randomUUID(), from: "airi" as const, text: "Connection error — is the backend running?", ts: Date.now() };
+        update({ messages: [...msgs.slice(0,-1), reply] });
+      })
+      .finally(() => setSending(false));
   }
 
   if (state.gamePhase!=="idle" && state.selectedGame) {
@@ -255,7 +260,7 @@ function PlayScreen({state,update}:{state:GameState;update:(s:Partial<GameState>
           ))}
         </div>
       ):(
-        <ChatArea messages={state.messages} onSend={handleSend} />
+        <ChatArea messages={state.messages} onSend={handleSend} sending={sending} />
       )}
     </div>
   );

@@ -2,9 +2,9 @@
   "name": "airi-companion",
   "type": "module",
   "scripts": {
-    "dev": "bun run server.ts",
+    "dev": "vite dev",
     "build": "vite build",
-    "start": "bun run server.ts",
+    "start": "vite preview --port 57316",
     "preview": "vite preview"
   },
   "dependencies": {
