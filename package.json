@@ -1,12 +1,11 @@
 {
-  "name": "zo-site",
+  "name": "airi-companion",
   "type": "module",
   "scripts": {
-    "clear-cache": "rm -rf node_modules/.vite",
-    "dev": "bun run clear-cache && NODE_ENV=development bun run --hot server.ts",
-    "build": "bun run clear-cache && vite build",
-    "prod": "bun run build && NODE_ENV=production bun run server.ts",
-    "preview": "bun run vite preview"
+    "dev": "bun run server.ts",
+    "build": "vite build",
+    "start": "bun run server.ts",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -54,5 +53,9 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
   }
 }
