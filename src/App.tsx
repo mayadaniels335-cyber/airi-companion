@@ -471,7 +471,7 @@ export default function App() {
           { tab: "rewards", icon: "🎁", label: "REWARDS" },
           { tab: "settings", icon: "⚙️", label: "SETTINGS" },
         ].map(nav => (
-          <button key={nav.tab} onClick={() => update({ [nav.tab]: nav.tab } as any)}
+          <button key={nav.tab} onClick={() => update({ tab: nav.tab as GameState["tab"] })}
             className={cn("flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-semibold transition-colors", state.tab === nav.tab ? "text-indigo-400" : "text-zinc-500")}>
             <span className="text-lg">{nav.icon}</span>
             {nav.label}
