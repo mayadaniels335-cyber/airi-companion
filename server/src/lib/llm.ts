@@ -18,7 +18,7 @@ export async function callAI(messages: LLMMessage[]): Promise<AIResponse> {
 
   const systemMsg = messages.find(m => m.role === 'system');
   const chatMsgs = messages.filter(m => m.role !== 'system');
-  const model = 'gemini-2.0-flash';
+  const model = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_API_KEY}`;
 
   const contents = chatMsgs.map(m => ({
